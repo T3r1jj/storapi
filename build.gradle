@@ -1,0 +1,121 @@
+import org.gradle.api.tasks.testing.logging.TestExceptionFormat
+import org.gradle.api.tasks.testing.logging.TestLogEvent
+
+buildscript {
+    ext {
+        kotlinVersion = '1.3.0'
+        junitVersion = '5.3.1'
+        byteBuddyVersion = '1.9.3'
+    }
+    repositories {
+        mavenCentral()
+        jcenter()
+        maven {
+            url "https://plugins.gradle.org/m2/"
+        }
+    }
+    dependencies {
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlinVersion"
+    }
+}
+
+apply plugin: "jacoco"
+apply plugin: "idea"
+apply plugin: "kotlin"
+
+group = 'io.github.t3r1jj'
+version = '1.0.0-SNAPSHOT'
+sourceCompatibility = 1.8
+
+repositories {
+    mavenCentral()
+    maven {
+        url "https://dl.bintray.com/mediafire/maven/"
+    }
+}
+
+dependencies {
+    compile "org.jetbrains.kotlin:kotlin-stdlib-jdk8"
+    compile "org.jetbrains.kotlin:kotlin-reflect"
+    compile group: 'org.slf4j', name: 'slf4j-simple', version: '1.7.25'
+    compile 'com.dropbox.core:dropbox-core-sdk:3.0.10'
+    compile group: 'org.apache.directory.studio', name: 'org.apache.commons.io', version: '2.4'
+    compile 'com.google.api-client:google-api-client:1.25.0'
+    compile group: 'com.google.apis', name: 'google-api-services-drive', version: 'v3-rev136-1.25.0'
+    compile group: 'com.github.eliux', name: 'megacmd4j', version: '1.2.1-alpha'
+    compile group: 'net.bytebuddy', name: 'byte-buddy', version: "$byteBuddyVersion"
+    compile group: 'net.bytebuddy', name: 'byte-buddy-agent', version: "$byteBuddyVersion"
+    compile "com.squareup.retrofit2:retrofit:2.3.0"
+    compile "com.squareup.retrofit2:converter-gson:2.3.0"
+    compile 'com.squareup.okhttp3:logging-interceptor:3.9.1'
+    compile group: 'org.jsoup', name: 'jsoup', version: '1.7.2'
+
+    testCompile group: 'org.mockito', name: 'mockito-core', version: '2.23.0'
+    testCompile group: 'org.mockito', name: 'mockito-junit-jupiter', version: '2.23.0'
+    testImplementation "org.jetbrains.kotlin:kotlin-test"
+    testImplementation "org.jetbrains.kotlin:kotlin-test-junit"
+    testImplementation "org.junit.jupiter:junit-jupiter-api:$junitVersion"
+    testCompile group: 'org.junit.platform', name: 'junit-platform-runner', version: '1.3.1'
+    testImplementation 'org.hamcrest:hamcrest-library:1.3'
+    testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$junitVersion"
+    testRuntimeOnly("org.junit.vintage:junit-vintage-engine:$junitVersion")
+}
+
+compileKotlin {
+    kotlinOptions.jvmTarget = "1.8"
+}
+compileTestKotlin {
+    kotlinOptions.jvmTarget = "1.8"
+}
+
+jacocoTestReport {
+    reports {
+        xml.enabled true
+        html.enabled false
+    }
+}
+
+test {
+    useJUnitPlatform()
+    jvmArgs "-XX:+UnlockExperimentalVMOptions", "-XX:+UseCGroupMemoryLimitForHeap"
+    maxHeapSize = "512m"
+}
+
+check.dependsOn jacocoTestReport
+
+tasks.withType(Test) {
+    testLogging {
+        outputs.upToDateWhen { false }
+        showStandardStreams = true
+        // set options for log level LIFECYCLE
+        events TestLogEvent.FAILED,
+                TestLogEvent.PASSED,
+                TestLogEvent.SKIPPED
+        exceptionFormat TestExceptionFormat.FULL
+        showExceptions true
+        showCauses true
+        showStackTraces true
+
+        // set options for log level DEBUG and INFO
+        debug {
+            events TestLogEvent.STARTED,
+                    TestLogEvent.FAILED,
+                    TestLogEvent.PASSED,
+                    TestLogEvent.SKIPPED,
+                    TestLogEvent.STANDARD_ERROR,
+                    TestLogEvent.STANDARD_OUT
+            exceptionFormat TestExceptionFormat.FULL
+        }
+        info.events = debug.events
+        info.exceptionFormat = debug.exceptionFormat
+
+        afterSuite { desc, result ->
+            if (!desc.parent) { // will match the outermost suite
+                def output = "Results: ${result.resultType} (${result.testCount} tests, ${result.successfulTestCount} successes, ${result.failedTestCount} failures, ${result.skippedTestCount} skipped)"
+                def startItem = '|  ', endItem = '  |'
+                def repeatLength = startItem.length() + output.length() + endItem.length()
+                println('\n' + ('-' * repeatLength) + '\n' + startItem + output + endItem + '\n' + ('-' * repeatLength))
+            }
+        }
+    }
+}
