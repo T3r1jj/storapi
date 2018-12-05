@@ -74,6 +74,8 @@ jobs:
     steps:
       - checkout
 
+      - run: chmod +x ./gradlew
+
       - attach_workspace:
           at: build/libs
 
