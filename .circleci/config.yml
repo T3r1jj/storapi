@@ -46,9 +46,52 @@ jobs:
           name: Save test results
           command: |
             mkdir -p ~/junit
+            mkdir -p ~/artifacts
             find . -type f -regex ".*/build/test-results/*/.*xml" -exec cp {} ~/junit/ \;
           when: always
       - store_test_results:
           path: ~/junit
       - store_artifacts:
-          path: ~/junit
+          path: ~/artifacts
+          destination: build/libs
+
+      - persist_to_workspace:
+          # Must be an absolute path, or relative path from working_directory. This is a directory on the container which is
+          # taken to be the root directory of the workspace.
+          root: build/libs
+          # Must be relative path from root
+          paths: .
+
+  deploy:
+    docker:
+      - image: t3r1jj/fcms:0.0.2
+
+    environment:
+      GRADLE_OPTS: -Xmx2048m -Dorg.gradle.daemon=false
+
+    working_directory: ~/repo
+
+    steps:
+      - attach_workspace:
+          at: build/libs
+
+      - checkout
+
+      - run:
+          name: Deploy if build pass and branch is naster with version tag
+          command: ./gradlew bintrayUpload -Dbintray.user=$BINTRAY_USER -Dbintray.key=$BINTRAY_KEY
+
+workflows:
+  version: 2
+  build-deploy:
+    jobs:
+      - build
+      - deploy:
+          requires:
+            - build
+          filters:
+            tags:
+              only:
+                - /^v\d+\.\d+\.\d+$/
+            branches:
+              only: master

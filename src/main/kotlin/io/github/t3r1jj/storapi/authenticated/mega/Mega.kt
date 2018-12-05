@@ -36,7 +36,7 @@ open class Mega(private val userName: String, private val password: String) : Au
         @Suppress("unused")
         @JvmStatic
         fun handleResult(code: Int) {
-            val fixedCode = -code
+            val fixedCode = Math.abs(code)
             when (fixedCode) {
                 0 -> {
                 }
