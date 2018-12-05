@@ -58,7 +58,7 @@ jobs:
       - persist_to_workspace:
           # Must be an absolute path, or relative path from working_directory. This is a directory on the container which is
           # taken to be the root directory of the workspace.
-          root: build/libs
+          root: build
           # Must be relative path from root
           paths: .
 
@@ -77,11 +77,11 @@ jobs:
       - run: chmod +x ./gradlew
 
       - attach_workspace:
-          at: build/libs
+          at: build
 
       - run:
           name: Deploy if build pass and branch is naster with version tag
-          command: ./gradlew bintrayUpload -Dbintray.user=$BINTRAY_USER -Dbintray.key=$BINTRAY_KEY
+          command: ./gradlew bintrayUpload -Dbintray.user=$BINTRAY_USER -Dbintray.key=$BINTRAY_API_KEY
 
 workflows:
   version: 2
@@ -94,6 +94,6 @@ workflows:
           filters:
             tags:
               only:
-                - /^v\d+\.\d+\.\d+$/
+                - /^\d+\.\d+\.\d+$/
             branches:
               only: master
