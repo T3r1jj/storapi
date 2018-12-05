@@ -72,10 +72,10 @@ jobs:
     working_directory: ~/repo
 
     steps:
+      - checkout
+
       - attach_workspace:
           at: build/libs
-
-      - checkout
 
       - run:
           name: Deploy if build pass and branch is naster with version tag
